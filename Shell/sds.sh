@@ -1,61 +1,6 @@
 
 
 
-#!/bin/bash
-#####################################
-#检测两台服务器指定目录下的文件一致性
-#####################################
-#通过对比两台服务器上文件的md5值，达到检测一致性的目的
-dir=/data/web
-b_ip=192.168.88.10
-#将指定目录下的文件全部遍历出来并作为md5sum命令的参数，进而得到所有文件的md5值，并写入到指定文件中
-find $dir -type f|xargs md5sum > /tmp/md5_a.txt
-ssh $b_ip "find $dir -type f|xargs md5sum > /tmp/md5_b.txt"
-scp $b_ip:/tmp/md5_b.txt /tmp
-#将文件名作为遍历对象进行一一比对
-for f in `awk '{print 2} /tmp/md5_a.txt'`
-do
-#以a机器为标准，当b机器不存在遍历对象中的文件时直接输出不存在的结果
-if grep -qw "$f" /tmp/md5_b.txt
-then
-md5_a=`grep -w "$f" /tmp/md5_a.txt|awk '{print 1}'`
-md5_b=`grep -w "$f" /tmp/md5_b.txt|awk '{print 1}'`
-#当文件存在时，如果md5值不一致则输出文件改变的结果
-if [ $md5_a != $md5_b ]
-then
-echo "$f changed."
-fi
-else
-echo "$f deleted."
-fi
-done
-
-
-
-
-
-#!/bin/bash
-#######################################################
-#检测网卡流量，并按规定格式记录在日志中
-#规定一分钟记录一次
-#日志格式如下所示:
-#2019-08-12 20:40
-#ens33 input: 1234bps
-#ens33 output: 1235bps
-######################################################3
-while :
-do
-#设置语言为英文，保障输出结果是英文，否则会出现bug
-LANG=en
-logfile=/tmp/`date +%d`.log
-#将下面执行的命令结果输出重定向到logfile日志中
-exec >> $logfile
-date +"%F %H:%M"
-#sar命令统计的流量单位为kb/s，日志格式为bps，因此要*1000*8
-sar -n DEV 1 59|grep Average|grep ens33|awk '{print $2,"\t","input:","\t",$5*1000*8,"bps","\n",$2,"\t","output:","\t",$6*1000*8,"bps"}'
-echo "####################"
-#因为执行sar命令需要59秒，因此不需要sleep
-done
 
 
 
@@ -84,12 +29,7 @@ echo "sum:$sum"
 
 
 
-#!/bin/bash
-################################################################
-#有一些脚本加入到了cron之中，存在脚本尚未运行完毕又有新任务需要执行的情况，
-#导致系统负载升高，因此可通过编写脚本，筛选出影响负载的进程一次性全部杀死。
-################################################################
-ps aux|grep 指定进程名|grep -v grep|awk '{print $2}'|xargs kill -9
+
 
 
 
@@ -199,30 +139,6 @@ INDEX2=$(echo ${arr[1]})
 INDEX3=$(echo ${arr[2]})
 
 
-
-
-
-
-示例：
-批量修改文件名
-# touch article_{1..3}.html
-# ls
-article_1.html  article_2.html  article_3.html
-目的：把article改为bbs
-
-方法1：
-
-for file in $(ls *html); do
-    mv $file bbs_${file#*_}
-    # mv $file $(echo $file |sed -r 's/.*(_.*)/bbs\1/')
-    # mv $file $(echo $file |echo bbs_$(cut -d_ -f2)
-done
-方法2：
-
-for file in $(find . -maxdepth 1 -name "*html"); do
-     mv $file bbs_${file#*_}
-done
-方法3：
 
 
 
